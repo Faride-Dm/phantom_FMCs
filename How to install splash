@@ -1,0 +1,60 @@
+----------------- The Cairo Graphics Library --------------------
+
+!!!! IMPORTANT !!!!
+
+You should install giza with a gcc version >= 5.4.
+
+To install gcc version 5 on ubuntu 14.04 or a version of Mint that is based on this ubuntu version do as below:
+
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get update
+sudo apt-get install gcc-5 g++-5
+
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 60 --slave /usr/bin/g++ g++ /usr/bin/g++-5
+
+------------------------------------------------------------------
+
+x11
+
+sudo apt-get install libx11-dev
+------------------------------------------------------------------
+
+Cairo is a low-level system library used in many applications. Thus it is highly
+likely that you already have a copy on your system and already in your library path.
+Look for the header file cairo.h, e.g. using
+
+"locate cairo.h"
+
+or have a look in the usual places (e.g. /usr/include/cairo, /usr/X11/include). If not,
+you can usually use your inbuilt package manager to install cairo as follows:
+
+   Debian/Ubuntu:
+      sudo apt-get install libcairo2-dev
+   Fedora/Red Hat/CentOS:
+      sudo yum install cairo-devel
+   OpenSUSE:
+      zypper install cairo-devel
+   MacPorts:
+      sudo port install cairo
+
+Alternatively, use the script provided in the root-level splash directory:
+
+./install-cairo.sh
+
+./configure
+
+Then do 
+
+make
+
+and then do
+
+sudo make install 
+
+
+===================== Install SPLASH ============================
+cd splash
+make SYSTEM=gfortran
+sudo make install
+In ~/.bashrc add the following line:
+export LD_LIBRARY_PATH=/usr/local/lib
