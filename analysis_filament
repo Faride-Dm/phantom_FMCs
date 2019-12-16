@@ -1,0 +1,247 @@
+module analysis
+
++ implicit none
+
++ character(len=20), parameter, public :: analysistype = 'filament'
+
++ public :: do_analysis
+
++
+
++ private
+
++
+
++contains
+
++
+
++subroutine do_analysis(dumpfile,num,xyzh,vxyzu,particlemass,npart,time,iunit)
+
++ use part, only:npartoftype,iamtype,isdead_or_accreted,nptmass,&
+
++                xyzmh_ptmass,igas,rhoh
+
++ use physcon,      only:gg,solarm,au,pi,years,pc
+
++ use setup_params, only:rhozero
+
++ character(len=*), intent(in) :: dumpfile
+
++ integer,          intent(in) :: num,npart,iunit
+
++ real,             intent(in) :: xyzh(:,:),vxyzu(:,:)
+
++ real,             intent(in) :: particlemass,time
+
++ integer :: i,nout,iii
+
++ real :: macc,mout,mtot,mtotall,mwithinr
+
++ real :: xi,yi,zi,hi,rhoi,r,vxi,vyi,vzi,vr
+
++ real :: rcut,rbin,zcut,rhocut,tfreefall,tff,tyrs
+
++ real(kind=8) :: umass,utime,udist,udens
+
++ character(len=30) :: fileout
+
++ real :: vol, density
+
++
+
++!
+
++!--global quantities
+
++!
+
++ print*,'npartoftype = ',npartoftype(:)
+
++ print*,'npart = ',npart
+
++!  nout = 0
+
++!  mout = 0.
+
++!  mtot = 0.
+
++!  mtotall = 0.
+
++!  mwithinr = 0.
+
++!  maboverho = 0.
+
++!  udist = 1.d16
+
++ udist = pc
+
++ umass = solarm
+
++ utime = sqrt(udist**3/(gg*umass)) ! utime is obtained such that G=1
+
++ udens = umass/udist**3
+
++ print "(a,es10.3)",' udist = ',udist
+
++ print "(a,es10.3)",' umass = ',umass
+
++ print "(a,2es10.3)",' utime = ',utime, sqrt(udist**3/(gg*umass))
+
++ print "(a,es10.3)",' udens = ',udens
+
++ print "(a,es10.3)",' time  = ',time
+
++ tfreefall = sqrt((3.*pi)/(32.*rhozero))
+
++ tff = time/tfreefall
+
++ tyrs = time/(years/utime)
+
++ print*,' t/tff = ',tff,' t(years) = ',tyrs
+
++
+
++ !--define mass, radius and velocity cuts
+
++ rcut = 0
+
++ rbin = 0.001
+
++ zcut = 0.02
+
++ print*,' zcut = ',zcut
+
++ 
+
++ !--compute mass in 
+
++ do while (rcut <= 0.3)
+
++    nout = 0
+
++    mout = 0.
+
++    mtot = 0.
+
++    mtotall = 0.
+
++    mwithinr = 0.
+
++    print*,' rcut = ',rcut
+
++    iii = 0
+
++    do i=1,npart
+
++        xi = xyzh(1,i)
+
++        yi = xyzh(2,i)
+
++        zi = xyzh(3,i)
+
++        hi = xyzh(4,i)
+
++        if (.not. isdead_or_accreted(hi)) then
+
++        r = sqrt(xi*xi + yi*yi)
+
++        mtot = mtot + particlemass
+
++        !--here we count all material that has passed
+
++        !  through a certain radius
+
++        if ((r > rcut) .and. (r < (rcut+rbin)) .and. (zi <= zcut) .and. (zi >= -zcut)) then
+
++            mwithinr = mwithinr + particlemass
+
++            iii = iii + 1
+
++        endif
+
++        endif
+
++        mtotall = mtotall + particlemass
+
++    enddo
+
++    
+
++    if (nptmass >= 1) then
+
++        do i=1,nptmass
+
++        macc = macc + xyzmh_ptmass(4,i)
+
++!         print*,'sink#, sinkmass',i,xyzmh_ptmass(4,i)
+
++        enddo
+
++    else
+
++        macc = 0.
+
++    endif
+
++    mtot = mtot + macc
+
++    mwithinr = mwithinr + macc
+
++    vol = pi*((rcut+rbin)**2.d0-rcut*rcut)*(2.d0*zi)
+
++    density = (mwithinr/vol)*udens
+
++
+
++!     print*, "#### iii =", iii
+
++    print*,'n(sinks) = ',nptmass,' mtot = ',mtot,mtotall
+
++    print*,'mass (r<',rcut,') = ',mwithinr, ' compared to ',macc+mout
+
++    print*,'density = ', density, 'g/cm^3'
+
++
+
++    fileout= 'density.ev'
+
++    if (num==1) then
+
++        open(iunit,file=fileout,status='replace')
+
++        write(iunit,"('#',10(a14,1x))") 'time','t/tff','t(yrs)','M<','density','rcut'
+
++    else
+
++        open(iunit,file=fileout,position='append')
+
++    endif
+
++    print*,'writing to '//trim(fileout)
+
++
+
++
+
++    write(*,*) 't = ',time,' macc = ',macc,' Mout = ',mout
+
++    write(iunit,"(10(1pe14.6,1x))") time,tff,tyrs,mwithinr,rcut,density
+
++    
+
++    close(iunit)
+
++    rcut = rcut + rbin
+
++enddo
+
++
+
++end subroutine do_analysis
+
++
+
++end module
+
+Flag notifications
